@@ -1,64 +1,77 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4f78a47e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "#Import Dependencies\n",
-    "from flask import Flask, render_template\n",
-    "from flask_pymongo import PyMongo\n",
-    "import scraping\n",
-    "\n",
-    "#Set up Flask\n",
-    "app = Flask(__name__)\n",
-    "\n",
-    "#Connect to Mongo using PyMongo\n",
-    "# Use flask_pymongo to set up mongo connection\n",
-    "app.config[\"MONGO_URI\"] = \"mongodb://localhost:27017/mars_app\"\n",
-    "mongo = PyMongo(app)\n",
-    "\n",
-    "#Define the route for the HTML page\n",
-    "@app.route(\"/\")\n",
-    "def index():\n",
-    "   mars = mongo.db.mars.find_one()\n",
-    "   return render_template(\"index.html\", mars=mars)\n",
-    "\n",
-    "#Add next route and function to our code\n",
-    "@app.route(\"/scrape\")\n",
-    "def scrape():\n",
-    "   mars = mongo.db.mars\n",
-    "   mars_data = scraping.scrape_all()\n",
-    "   mars.update({}, mars_data, upsert=True)\n",
-    "   return \"Scraping Successful!\"\n",
-    "\n",
-    "#Run the code\n",
-    "if __name__ == \"__main__\":\n",
-    "   app.run()"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.7.11"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Mission to Mars</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Add Jumbotron to Header -->
+      <div class="jumbotron text-center" style="background-color: #f3d6ca">
+        <h1 style="color: #d16b3b">Mission to Mars</h1>
+        <!-- Add a button to activate scraping script -->
+        <p><a class="btn btn-danger btn-lg" href="/scrape" role="button">Scrape New Data</a></p>
+      </div>
+
+      <!-- Add section for Mars News -->
+      <div class="row" id="mars-news">
+        <div class="col-sm-12">
+          <div class="media">
+            <div class="media-body">
+              <h2>Latest Mars News</h2>
+              <h4 class="media-heading">{{ mars.news_title }}</h4>
+              <p>{{ mars.news_paragraph }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section for Featured Image and Facts table -->
+      <div class="row" id="mars-featured-image">
+        <div class="col-md-8">
+          <h2>Featured Mars Image</h2>
+
+          <!-- if images is False/None/non-existent, then default to error message -->
+          <img
+            src="{{mars.featured_image | default('static/images/error.png', true) }}"
+            class="img-responsive"
+            alt="Responsive image"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <!-- Mars Facts -->
+          <div class="row" id="mars-facts" >
+            <h2>Mars Facts</h2>
+             <table border="5"  style="background-color: #f3d6ca" class="dataframe table table-striped" 
+             src="{{ mars.facts | safe }}"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section for Mars Hemispheres -->
+      <div class="row" id="mars-hemispheres">
+        <div class="page-header">
+          <h2 class="text-center">Mars Hemispheres</h2>
+        </div>
+
+        {% for hemisphere in mars.hemispheres %}
+        <div class="col-md-3">
+          <div class="img-thumbnail">
+            <img src="{{hemisphere.img_url | default('static/images/error.png', true)}}" alt="..." class="img-thumbnail">
+            <div class="caption">
+              <h3>{{hemisphere.title}}</h3>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>
